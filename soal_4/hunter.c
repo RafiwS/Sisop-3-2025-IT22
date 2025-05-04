@@ -180,7 +180,7 @@ void battle_hunter() {
 }
 
 int main() {
-    key_t key = get_system_key(); // 🔧 Menggunakan key dari shm_common.h
+    key_t key = get_system_key(); 
 
     shm_id = shmget(key, sizeof(struct SystemData), 0666);
     if (shm_id == -1) {
