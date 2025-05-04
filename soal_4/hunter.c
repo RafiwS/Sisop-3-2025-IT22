@@ -182,7 +182,7 @@ void battle_hunter() {
 int main() {
     key_t key = get_system_key(); 
 
-    shm_id = shmget(key, sizeof(struct SystemData), 0666);
+    shm_id = shmget(key, sizeof(struct SystemData), 0666); // still error
     if (shm_id == -1) {
         perror("shm_common.h");
         exit(EXIT_FAILURE);
