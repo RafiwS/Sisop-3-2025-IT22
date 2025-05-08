@@ -1,6 +1,295 @@
-#Nomer 2
+#Nomor 1
 
-Di soal nomer 2, kita diminta membuat sebuah Delivery Management System untuk perusahaan ekspedisi RushGo
+Di soal ini, kita diminta untuk membuat sistem client-server berbasis socket RPC di C, di mana client dapat mengirim file teks terenkripsi ke server untuk didekripsi dan disimpan sebagai file JPEG, serta mengunduh file JPEG dari server.
+
+1. image_server
+   a. build_path
+   ```
+   void build_path(char *dest, const char *subpath) {
+    snprintf(dest, PATH_MAX, "%s/%s", base_dir, subpath);
+    }
+   ```
+   Tujuan: Menyusun path absolut ke file/subdirektori dalam server.
+
+   b. write_log
+   ```
+   void write_log(const char *action, const char *info) {
+    char log_path[PATH_MAX];
+    build_path(log_path, "server.log");
+
+    FILE *log = fopen(log_path, "a");
+    if (!log) return;
+
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    char buf[64];
+    strftime(buf, sizeof(buf), "[%Y-%m-%d %H:%M:%S]", t);
+    fprintf(log, "[Server]%s: [%s] [%s]\n", buf, action, info);
+    fclose(log);
+    }
+   ```
+   Tujuan: Menuliskan log aktivitas server ke server.log.
+
+   c. reverse_string
+   ```
+   void reverse_string(char *str) {
+    int len = strlen(str);
+    for (int i = 0; i < len / 2; i++) {
+        char tmp = str[i];
+        str[i] = str[len - i - 1];
+        str[len - i - 1] = tmp;
+        }
+    }
+   ```
+   Tujuan: Membalik isi string (untuk proses dekripsi).
+
+   d. hex_to_bytes
+   ```
+   int hex_to_bytes(const char *hex, unsigned char *out) {
+    int len = strlen(hex);
+    for (int i = 0; i < len / 2; i++) {
+        sscanf(hex + 2 * i, "%2hhx", &out[i]);
+        }
+    return len / 2;
+    }
+   ```
+   Tujuan: Mengonversi string hex ke bentuk biner.
+
+   e. handle_upload
+   ```
+   void handle_upload(int client_sock, char *data) {
+    reverse_string(data);
+
+    unsigned char binary[BUF_SIZE];
+    int bin_len = hex_to_bytes(data, binary);
+
+    time_t t = time(NULL);
+    char img_path[PATH_MAX];
+    char filename[64];
+    sprintf(filename, "%ld.jpeg", t);
+    build_path(img_path, "database/");
+    strcat(img_path, filename);
+
+    FILE *img = fopen(img_path, "wb");
+    if (!img) {
+        send(client_sock, "ERROR: Cannot save image", 25, 0);
+        return;
+        }
+
+    fwrite(binary, 1, bin_len, img);
+    fclose(img);
+
+    write_log("SAVE", filename);
+    send(client_sock, "Saved and decrypted", 19, 0);
+    }
+   ```
+   Tujuan: Menerima data terenkripsi dari client, lalu decode dan simpan sebagai file JPEG.
+
+   f. handle_download
+   ```
+   void handle_download(int client_sock, const char *filename) {
+    char path[PATH_MAX];
+    build_path(path, "database/");
+    strcat(path, filename);
+    
+    FILE *f = fopen(path, "rb");
+    if (!f) {
+        send(client_sock, "ERROR: File not found", 22, 0);
+        return;
+        }
+
+    char buffer[BUF_SIZE];
+    int bytes;
+    while ((bytes = fread(buffer, 1, BUF_SIZE, f)) > 0) {
+        send(client_sock, buffer, bytes, 0);
+        }
+
+    fclose(f);
+    write_log("DOWNLOAD", filename);
+    }
+   ```
+   Tujuan: Mengirim file JPEG ke client sesuai permintaan filename.
+
+   g. int main()
+   ```
+   int main() {
+    if (getcwd(base_dir, sizeof(base_dir)) == NULL) {
+        perror("getcwd failed");
+        exit(EXIT_FAILURE);
+        }
+
+    pid_t pid = fork();
+    if (pid != 0) return 0; // daemonize
+
+    int server_fd, client_sock;
+    struct sockaddr_in address;
+    socklen_t addrlen = sizeof(address);
+
+    server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    bind(server_fd, (struct sockaddr*)&address, sizeof(address));
+    listen(server_fd, 3);
+
+    while (1) {
+        client_sock = accept(server_fd, (struct sockaddr*)&address, &addrlen);
+        if (client_sock < 0) continue;
+
+        char buffer[BUF_SIZE];
+        int valread = recv(client_sock, buffer, BUF_SIZE - 1, 0);
+        if (valread <= 0) {
+            close(client_sock);
+            continue;
+            }
+        buffer[valread] = '\0';
+
+        if (strncmp(buffer, "UPLOAD ", 7) == 0) {
+            write_log("UPLOAD", buffer + 7);
+            char content[BUF_SIZE];
+            valread = recv(client_sock, content, BUF_SIZE - 1, 0);
+            if (valread > 0) {
+                content[valread] = '\0';
+                handle_upload(client_sock, content);
+            }
+            } else if (strncmp(buffer, "DOWNLOAD ", 9) == 0) {
+            handle_download(client_sock, buffer + 9);
+            } else if (strncmp(buffer, "EXIT", 4) == 0) {
+            write_log("EXIT", "Client requested to exit");
+            }
+
+        close(client_sock);
+        }
+
+    return 0;
+    }
+   ```
+Fungsi main() pada program image_server.c bertanggung jawab untuk menjalankan server secara daemon dan memproses permintaan client melalui koneksi TCP. Pertama, program menyimpan direktori kerja saat ini menggunakan getcwd() ke dalam variabel global base_dir, yang nantinya dipakai untuk membangun path absolut file log dan database. Kemudian, dengan fork(), server menciptakan proses anak dan segera mengakhiri proses induk untuk menjalankan daemon di latar belakang. Setelah menjadi daemon, server membuat socket TCP (SOCK_STREAM), mengikatnya ke semua alamat IP (INADDR_ANY) di port 9090, dan mulai mendengarkan koneksi masuk. Di dalam loop tak hingga, server menerima koneksi client satu per satu menggunakan accept(). Setelah menerima koneksi, server membaca perintah dari client menggunakan recv(). Bila perintah adalah UPLOAD, server akan menerima data file terenkripsi, mendekripsinya, menyimpannya sebagai file JPEG dengan nama berdasarkan timestamp, dan mencatat log. Bila perintah adalah DOWNLOAD, server membaca file yang diminta dari database dan mengirimkannya ke client. Jika perintah adalah EXIT, server hanya mencatat permintaan keluar. Setelah setiap sesi client selesai, socket ditutup dan server kembali siap menerima koneksi baru.
+
+2. image_client
+   a. upload_file
+   ```
+   void upload_file(int sock, const char *filename) {
+    FILE *f = fopen(filename, "r");
+    if (!f) {
+        printf("File not found!\n");
+        return;
+        }
+
+    char msg[256];
+    sprintf(msg, "UPLOAD %s", filename);
+    send(sock, msg, strlen(msg), 0);
+    sleep(1);
+
+    char buffer[BUF_SIZE];
+    int bytes;
+    while ((bytes = fread(buffer, 1, BUF_SIZE, f)) > 0) {
+        send(sock, buffer, bytes, 0);
+        }
+    fclose(f);
+
+    bytes = recv(sock, buffer, BUF_SIZE, 0);
+    buffer[bytes] = '\0';
+    printf("Server: %s\n", buffer);
+    }
+   ```
+   Fungsi ini bertugas mengirimkan file teks ke server untuk didekripsi.
+- Membuka file teks yang ada di direktori secrets/.
+- Mengirim perintah "UPLOAD <filename>" ke server.
+- Menunggu 1 detik agar server siap menerima isi file.
+- Mengirimkan isi file dalam blok/blok buffer ke server.
+- Menerima respon dari server setelah file berhasil diproses.
+
+    b. download_file
+    ```
+    void download_file(int sock, const char *filename) {
+    char msg[256];
+    sprintf(msg, "DOWNLOAD %s", filename);
+    send(sock, msg, strlen(msg), 0);
+
+    FILE *f = fopen(filename, "w");
+    if (!f) {
+        printf("Gagal buka file output\n");
+        return;
+        }
+
+    char buffer[BUF_SIZE];
+    int bytes;
+    while ((bytes = recv(sock, buffer, BUF_SIZE, 0)) > 0) {
+        fwrite(buffer, 1, bytes, f);
+        if (bytes < BUF_SIZE) break;
+        }
+
+    fclose(f);
+    }  
+    ```
+    Fungsi ini meminta file JPEG dari server berdasarkan nama file (timestamp).
+- Mengirimkan perintah "DOWNLOAD <filename>" ke server.
+- Membuka (atau membuat) file lokal untuk menampung hasil unduhan.
+- Menerima data secara bertahap dari socket.
+- Menulis data ke file hingga semua data diterima.
+
+     c. main
+    ``` 
+    while (1) {
+        printf("| Image Decoder Client |\n");
+        printf("1. Send input file to server\n");
+        printf("2. Download file from server\n");
+        printf("3. Exit\n>> ");
+
+        int choice;
+        scanf("%d", &choice);
+        getchar();
+
+        int sock = socket(AF_INET, SOCK_STREAM, 0);
+        struct sockaddr_in server = {
+            .sin_family = AF_INET,
+            .sin_port = htons(PORT),
+            };
+        inet_pton(AF_INET, "127.0.0.1", &server.sin_addr);
+
+        if (connect(sock, (struct sockaddr *)&server, sizeof(server)) < 0) {
+            perror("Connect failed");
+            close(sock);
+            continue;
+            }
+        if (choice == 3){
+                char msg[256];
+                sprintf(msg, "EXIT");
+                send(sock, msg, strlen(msg), 0);
+                break;
+            }
+
+        char fname[256];
+        printf("Enter the file name: ");
+        scanf("%s", fname);
+
+        if (choice == 1) {
+            char path[300];
+            sprintf(path, "secrets/%s", fname);
+            upload_file(sock, path);
+        } else if (choice == 2) {
+            download_file(sock, fname);
+            }
+
+        close(sock);
+        }
+
+    return 0;
+    }
+    ```
+    Fungsi utama ini menampilkan menu interaktif kepada pengguna.
+- User memilih apakah ingin mengirim file, mengunduh file, atau keluar.
+- Setiap iterasi membuat koneksi TCP baru ke server (127.0.0.1:9090).
+- Jika opsi 1 dipilih, file akan dibaca dari folder secrets/ lalu dikirim ke server.
+- Jika opsi 2, client meminta file JPEG berdasarkan nama file.
+- Jika memilih Exit (3), client mengirim "EXIT" ke server dan keluar dari program.
+
+
+#Nomor 2
+
+Di soal nomor 2, kita diminta membuat sebuah Delivery Management System untuk perusahaan ekspedisi RushGo
 a. Buat file nano delivery_agent
 ```
 #include <stdio.h>
