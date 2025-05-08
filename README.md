@@ -737,6 +737,7 @@ int main() {
 ```
 code di atas merupakan code dari system.c, di mana code ini menampilkan bagian dari system yang akan bisa melihat status hunter dan juga dungeon
 output yang diberikan : 
+![Image](https://github.com/user-attachments/assets/8415ec1b-fa49-405b-9cf9-9825da3ded0f)
 
 
 
