@@ -110,7 +110,7 @@ Di soal ini, kita diminta untuk membuat sistem client-server berbasis socket RPC
    ```
    Tujuan: Mengirim file JPEG ke client sesuai permintaan filename.
 
-   g. int main()
+   g. main
    ```
    int main() {
     if (getcwd(base_dir, sizeof(base_dir)) == NULL) {
