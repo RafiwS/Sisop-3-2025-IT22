@@ -758,7 +758,6 @@ void connect_shared_memory() {
         exit(1);
     }
 
-    // Gunakan IPC_CREAT untuk memastikan shared memory dapat dibuat jika belum ada
     shmid = shmget(key, sizeof(struct SystemData), IPC_CREAT | 0666);
     if (shmid == -1) {
         perror("shmget");
