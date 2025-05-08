@@ -4,7 +4,7 @@ Di soal ini, kita diminta untuk membuat sistem client-server berbasis socket RPC
 
 1. image_server
    a. build_path
-   ```
+   ```c
    void build_path(char *dest, const char *subpath) {
     snprintf(dest, PATH_MAX, "%s/%s", base_dir, subpath);
     }
@@ -12,7 +12,7 @@ Di soal ini, kita diminta untuk membuat sistem client-server berbasis socket RPC
    Tujuan: Menyusun path absolut ke file/subdirektori dalam server.
 
    b. write_log
-   ```
+   ```c
    void write_log(const char *action, const char *info) {
     char log_path[PATH_MAX];
     build_path(log_path, "server.log");
@@ -31,7 +31,7 @@ Di soal ini, kita diminta untuk membuat sistem client-server berbasis socket RPC
    Tujuan: Menuliskan log aktivitas server ke server.log.
 
    c. reverse_string
-   ```
+   ```c
    void reverse_string(char *str) {
     int len = strlen(str);
     for (int i = 0; i < len / 2; i++) {
@@ -44,7 +44,7 @@ Di soal ini, kita diminta untuk membuat sistem client-server berbasis socket RPC
    Tujuan: Membalik isi string (untuk proses dekripsi).
 
    d. hex_to_bytes
-   ```
+   ```c
    int hex_to_bytes(const char *hex, unsigned char *out) {
     int len = strlen(hex);
     for (int i = 0; i < len / 2; i++) {
@@ -56,7 +56,7 @@ Di soal ini, kita diminta untuk membuat sistem client-server berbasis socket RPC
    Tujuan: Mengonversi string hex ke bentuk biner.
 
    e. handle_upload
-   ```
+   ```c
    void handle_upload(int client_sock, char *data) {
     reverse_string(data);
 
@@ -86,7 +86,7 @@ Di soal ini, kita diminta untuk membuat sistem client-server berbasis socket RPC
    Tujuan: Menerima data terenkripsi dari client, lalu decode dan simpan sebagai file JPEG.
 
    f. handle_download
-   ```
+   ```c
    void handle_download(int client_sock, const char *filename) {
     char path[PATH_MAX];
     build_path(path, "database/");
@@ -111,7 +111,7 @@ Di soal ini, kita diminta untuk membuat sistem client-server berbasis socket RPC
    Tujuan: Mengirim file JPEG ke client sesuai permintaan filename.
 
    g. main
-   ```
+   ```c
    int main() {
     if (getcwd(base_dir, sizeof(base_dir)) == NULL) {
         perror("getcwd failed");
@@ -169,7 +169,7 @@ Fungsi main() pada program image_server.c bertanggung jawab untuk menjalankan se
 
 2. image_client
    a. upload_file
-   ```
+   ```c
    void upload_file(int sock, const char *filename) {
     FILE *f = fopen(filename, "r");
     if (!f) {
@@ -202,7 +202,7 @@ Fungsi main() pada program image_server.c bertanggung jawab untuk menjalankan se
 - Menerima respon dari server setelah file berhasil diproses.
 
     b. download_file
-    ```
+    ```c
     void download_file(int sock, const char *filename) {
     char msg[256];
     sprintf(msg, "DOWNLOAD %s", filename);
@@ -231,7 +231,7 @@ Fungsi main() pada program image_server.c bertanggung jawab untuk menjalankan se
 - Menulis data ke file hingga semua data diterima.
 
      c. main
-    ``` 
+    ```c
     while (1) {
         printf("| Image Decoder Client |\n");
         printf("1. Send input file to server\n");
@@ -291,7 +291,7 @@ Fungsi main() pada program image_server.c bertanggung jawab untuk menjalankan se
 
 Di soal nomor 2, kita diminta membuat sebuah Delivery Management System untuk perusahaan ekspedisi RushGo
 a. Buat file nano delivery_agent
-```
+```c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -407,7 +407,7 @@ int main() {
 ```
 
 b. Buat file nano dispatcher.c
-```
+```c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
