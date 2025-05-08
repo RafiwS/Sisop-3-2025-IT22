@@ -566,3 +566,178 @@ d. Untuk pengumuman reguler, menggunakan ./dispatcher -deliver [nama[
 e. Untuk mengecek status pesanan, menggunakan ./dispatcher -status [nama]
 
 f. Untuk melihat semua order disertai nama dan status, menggunakan ./dispatcher -list
+
+#soal no 4
+pada soal ini kita disuruh membuat code dengan clue dari shm_commmon.sh yang sudah diberikan di soal, pada soal ini saya menggunakan shared memory untuk menyimpan data sesuai dengan system.c dan hunter.c
+
+```c
+#include "shm_common.h"
+#include <errno.h>
+
+struct SystemData *system_data;
+int shm_id;
+
+void handle_exit(int sig) {
+    if (shmdt(system_data) == -1) {
+        perror("shmdt");
+    }
+    printf("Shared memory detached. Exiting.\n");
+    exit(0);
+}
+
+void list_hunters() {
+    printf("\n=== List of Hunters ===\n");
+    for (int i = 0; i < system_data->num_hunters; ++i) {
+        struct Hunter h = system_data->hunters[i];
+        printf("Name: %s | Level: %d | EXP: %d | ATK: %d | HP: %d | DEF: %d | Status: %s\n",
+               h.username, h.level, h.exp, h.atk, h.hp, h.def, h.banned ? "BANNED" : "ACTIVE");
+    }
+}
+
+void list_dungeons() {
+    printf("\n=== List of Dungeons ===\n");
+    for (int i = 0; i < system_data->num_dungeons; ++i) {
+        struct Dungeon d = system_data->dungeons[i];
+        printf("Name: %s | Min Level: %d | Reward: EXP+%d ATK+%d HP+%d DEF+%d\n",
+               d.name, d.min_level, d.exp, d.atk, d.hp, d.def);
+    }
+}
+
+void add_dungeon() {
+    if (system_data->num_dungeons >= MAX_DUNGEONS) {
+        printf("Dungeon list full!\n");
+        return;
+    }
+
+    char *names[] = {
+        "Double Dungeon", "Demon Castle", "Pyramid Dungeon", "Red Gate Dungeon",
+        "Hunters Guild Dungeon", "Busan A-Rank Dungeon", "Insects Dungeon",
+        "Goblins Dungeon", "D-Rank Dungeon", "Gwanak Mountain Dungeon",
+        "Hapjeong Subway Station Dungeon"
+    };
+
+    srand(time(NULL));
+    struct Dungeon d;
+    strcpy(d.name, names[rand() % 11]);
+    d.min_level = rand() % 5 + 1;
+    d.exp = rand() % 151 + 150;
+    d.atk = rand() % 51 + 100;
+    d.hp = rand() % 51 + 50;
+    d.def = rand() % 26 + 25;
+
+    system_data->dungeons[system_data->num_dungeons++] = d;
+    printf("Dungeon '%s' added!\n", d.name);
+}
+
+void ban_hunter() {
+    char name[50];
+    printf("Enter hunter name to ban: ");
+    if (scanf("%49s", name) != 1) {
+        printf("Invalid input.\n");
+        return;
+    }
+    for (int i = 0; i < system_data->num_hunters; ++i) {
+        if (strcmp(system_data->hunters[i].username, name) == 0) {
+            system_data->hunters[i].banned = 1;
+            printf("Hunter %s has been banned.\n", name);
+            return;
+        }
+    }
+    printf("Hunter not found!\n");
+}
+
+void unban_hunter() {
+    char name[50];
+    printf("Enter hunter name to unban: ");
+    if (scanf("%49s", name) != 1) {
+        printf("Invalid input.\n");
+        return;
+    }
+    for (int i = 0; i < system_data->num_hunters; ++i) {
+        if (strcmp(system_data->hunters[i].username, name) == 0) {
+            system_data->hunters[i].banned = 0;
+            printf("Hunter %s has been unbanned.\n", name);
+            return;
+        }
+    }
+    printf("Hunter not found!\n");
+}
+
+void reset_hunter() {
+    char name[50];
+    printf("Enter hunter name to reset: ");
+    if (scanf("%49s", name) != 1) {
+        printf("Invalid input.\n");
+        return;
+    }
+    for (int i = 0; i < system_data->num_hunters; ++i) {
+        if (strcmp(system_data->hunters[i].username, name) == 0) {
+            system_data->hunters[i].level = 1;
+            system_data->hunters[i].exp = 0;
+            system_data->hunters[i].atk = 10;
+            system_data->hunters[i].hp = 100;
+            system_data->hunters[i].def = 5;
+            system_data->hunters[i].banned = 0;
+            printf("Hunter %s has been reset.\n", name);
+            return;
+        }
+    }
+    printf("Hunter not found!\n");
+}
+
+int main() {
+    signal(SIGINT, handle_exit);
+
+    key_t key = get_system_key();
+    shm_id = shmget(key, sizeof(struct SystemData), IPC_CREAT | 0666);
+    if (shm_id == -1) {
+        perror("shmget failed");
+        exit(EXIT_FAILURE);
+    }
+
+    system_data = (struct SystemData *)shmat(shm_id, NULL, 0);
+    if (system_data == (void *)-1) {
+        perror("shmat failed");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("System is running...\n");
+
+    int choice;
+    while (1) {
+        printf("\n=== System Menu ===\n");
+        printf("1. List Hunters\n");
+        printf("2. List Dungeons\n");
+        printf("3. Add Dungeon\n");
+        printf("4. Ban Hunter\n");
+        printf("5. Unban Hunter\n");
+        printf("6. Reset Hunter\n");
+        printf("7. Exit\n");
+        printf("Choose: ");
+        if (scanf("%d", &choice) != 1) {
+            printf("Invalid input.\n");
+            while (getchar() != '\n');
+            continue;
+        }
+
+        switch (choice) {
+            case 1: list_hunters(); break;
+            case 2: list_dungeons(); break;
+            case 3: add_dungeon(); break;
+            case 4: ban_hunter(); break;
+            case 5: unban_hunter(); break;
+            case 6: reset_hunter(); break;
+            case 7: handle_exit(SIGINT); break;
+            default: printf("Invalid choice.\n");
+        }
+    }
+
+    return 0;
+}
+```
+code di atas merupakan code dari system.c, di mana code ini menampilkan bagian dari system yang akan bisa melihat status hunter dan juga dungeon
+output yang diberikan : 
+
+
+
+
