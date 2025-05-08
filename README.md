@@ -561,11 +561,23 @@ int main(int argc, char *argv[]) {
 
 c. Fitur untuk mengecek deliver.log untuk melihat catatan pengiriman
 
+
+![Image](https://github.com/user-attachments/assets/dda6d352-c722-475c-be73-63ec75562e6b)
+
 d. Untuk pengumuman reguler, menggunakan ./dispatcher -deliver [nama[
+
+
+![Image](https://github.com/user-attachments/assets/d9b8b4b2-4dc6-48e3-ba7a-09ab4c7fe41d)
 
 e. Untuk mengecek status pesanan, menggunakan ./dispatcher -status [nama]
 
+
+![Image](https://github.com/user-attachments/assets/6169025f-2198-4bc4-a3f3-818342fbd3a0)
+
 f. Untuk melihat semua order disertai nama dan status, menggunakan ./dispatcher -list
+
+
+![Image](https://github.com/user-attachments/assets/9c271062-9f82-40a1-b617-a33ab7ffc495)
 
 #soal no 4
 pada soal ini kita disuruh membuat code dengan clue dari shm_commmon.sh yang sudah diberikan di soal, pada soal ini saya menggunakan shared memory untuk menyimpan data sesuai dengan system.c dan hunter.c
