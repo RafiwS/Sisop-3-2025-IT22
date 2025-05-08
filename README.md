@@ -580,6 +580,7 @@ f. Untuk melihat semua order disertai nama dan status, menggunakan ./dispatcher 
 ![Image](https://github.com/user-attachments/assets/9c271062-9f82-40a1-b617-a33ab7ffc495)
 
 #soal no 4
+
 pada soal ini kita disuruh membuat code dengan clue dari shm_commmon.sh yang sudah diberikan di soal, pada soal ini saya menggunakan shared memory untuk menyimpan data sesuai dengan system.c dan hunter.c
 
 ```c
