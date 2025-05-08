@@ -882,4 +882,8 @@ pada hunter.c ini kita akan bisa registrasi sesuai dengan nama yang kita masukan
 
 hunter.c memiliki output sebagai berikut : 
 
+![Image](https://github.com/user-attachments/assets/70520a9b-d5a6-42d2-98ee-b384aa2c15c6)
 
+kesimpulan dari system.c dan hunter.c
+
+system.c memiliki shared memory ke hunter.c sebagai data utama yang saling terhubung, sebagai hunter kelas 1 kita hanya bisa memasuki dungeon level 1 sesuai dengan system.c
