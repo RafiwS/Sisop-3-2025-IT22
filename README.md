@@ -742,5 +742,144 @@ output yang diberikan :
 ![Image](https://github.com/user-attachments/assets/8415ec1b-fa49-405b-9cf9-9825da3ded0f)
 
 
+selanjutnya ada hunter.c di mana pada code hunter.c ini menyimpan dan menambahkan user hunter sebagai salah satu pemain, di hunter.c ini sebagai hunter kita akan dimulai dari level 1
+
+```c
+#include "shm_common.h"
+
+struct SystemData *shared_data;
+int shmid;
+int logged_in_index = -1;
+
+void connect_shared_memory() {
+    key_t key = get_system_key();
+    if (key == -1) {
+        perror("ftok");
+        exit(1);
+    }
+
+    // Gunakan IPC_CREAT untuk memastikan shared memory dapat dibuat jika belum ada
+    shmid = shmget(key, sizeof(struct SystemData), IPC_CREAT | 0666);
+    if (shmid == -1) {
+        perror("shmget");
+        printf("Gagal mengakses shared memory. Pastikan system.c sudah dijalankan.\n");
+        exit(1);
+    }
+
+    shared_data = shmat(shmid, NULL, 0);
+    if (shared_data == (void *)-1) {
+        perror("shmat");
+        exit(1);
+    }
+}
+
+void register_hunter() {
+    char username[50];
+    printf("Masukkan username: ");
+    scanf("%s", username);
+
+    for (int i = 0; i < shared_data->num_hunters; i++) {
+        if (strcmp(shared_data->hunters[i].username, username) == 0) {
+            printf("Username sudah digunakan.\n");
+            return;
+        }
+    }
+
+    if (shared_data->num_hunters >= MAX_HUNTERS) {
+        printf("Jumlah hunter sudah maksimum.\n");
+        return;
+    }
+
+    struct Hunter new_hunter;
+    strcpy(new_hunter.username, username);
+    new_hunter.level = 1;
+    new_hunter.exp = 0;
+    new_hunter.atk = 10;
+    new_hunter.hp = 100;
+    new_hunter.def = 5;
+    new_hunter.banned = 0;
+
+    shared_data->hunters[shared_data->num_hunters] = new_hunter;
+    shared_data->num_hunters++;
+
+    printf("Hunter berhasil didaftarkan.\n");
+}
+
+void login_hunter() {
+    char username[50];
+    printf("Masukkan username: ");
+    scanf("%s", username);
+
+    for (int i = 0; i < shared_data->num_hunters; i++) {
+        if (strcmp(shared_data->hunters[i].username, username) == 0) {
+            if (shared_data->hunters[i].banned) {
+                printf("Hunter ini sedang di-ban.\n");
+                return;
+            }
+            logged_in_index = i;
+            printf("Login berhasil sebagai %s.\n", username);
+            return;
+        }
+    }
+
+    printf("Username tidak ditemukan.\n");
+}
+
+void tampilkan_dungeon() {
+    printf("\n=== Daftar Dungeon yang Dapat Dimasuki ===\n");
+    for (int i = 0; i < shared_data->num_dungeons; i++) {
+        struct Dungeon d = shared_data->dungeons[i];
+        if (shared_data->hunters[logged_in_index].level >= d.min_level) {
+            printf("- %s (min level %d, exp %d, atk %d, hp %d, def %d)\n",
+                   d.name, d.min_level, d.exp, d.atk, d.hp, d.def);
+        }
+    }
+}
+
+void menu() {
+    int pilihan;
+    do {
+        printf("\n=== Menu Hunter ===\n");
+        printf("1. Register Hunter\n");
+        printf("2. Login Hunter\n");
+        printf("3. Tampilkan Dungeon\n");
+        printf("0. Exit\n");
+        printf("Pilih: ");
+        scanf("%d", &pilihan);
+
+        switch (pilihan) {
+            case 1:
+                register_hunter();
+                break;
+            case 2:
+                login_hunter();
+                break;
+            case 3:
+                if (logged_in_index == -1) {
+                    printf("Silakan login terlebih dahulu.\n");
+                } else {
+                    tampilkan_dungeon();
+                }
+                break;
+            case 0:
+                shmdt(shared_data);
+                printf("Keluar dari program.\n");
+                break;
+            default:
+                printf("Pilihan tidak valid.\n");
+                break;
+        }
+    } while (pilihan != 0);
+}
+
+int main() {
+    connect_shared_memory();
+    menu();
+    return 0;
+}
+```
+pada hunter.c ini kita akan bisa registrasi sesuai dengan nama yang kita masukan, setelah itu kita harus login untuk bisa mengecek dungeon mana yang bisa kita masuki sesuai dengan shared memory dari system.c
+
+hunter.c memiliki output sebagai berikut : 
 
 
