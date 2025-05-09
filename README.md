@@ -1,9 +1,10 @@
+```
 ===================================================================
 Ananda Widi Alrafi 5027241067
 Raynard Carlent 5027241109
 Zahra Hafizhah 5027241121
 ===================================================================
-
+```
 #Nomor 1
 
 Di soal ini, kita diminta untuk membuat sistem client-server berbasis socket RPC di C, di mana client dapat mengirim file teks terenkripsi ke server untuk didekripsi dan disimpan sebagai file JPEG, serta mengunduh file JPEG dari server.
